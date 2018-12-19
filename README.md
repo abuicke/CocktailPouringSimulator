@@ -1,2 +1,2 @@
 # Hx711WeightSensorSimulator
-Simulated Hx711 weight sensor in Java.
+Simulated Hx711 weight sensor written in Java.
