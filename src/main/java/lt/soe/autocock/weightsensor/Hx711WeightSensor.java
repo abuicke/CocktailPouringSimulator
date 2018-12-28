@@ -28,30 +28,39 @@ public class Hx711WeightSensor {
             SAUCER_COCKTAIL_GLASS
     };
 
-    private static ZMQ.Socket socket;
-
     public static void main(String[] args) {
-        System.out.println("weight sensor running...");
+        System.out.println("weight sensor started...");
         try (ZContext context = new ZContext()) {
-            socket = context.createSocket(ZMQ.PAIR);
-            socket.bind("tcp://*:5556");
+            ZMQ.Socket zeroMqSocket = context.createSocket(ZMQ.PUB);
+            zeroMqSocket.bind("tcp://*:5555");
+            System.out.println("created ZeroMQ reply socket on localhost TCP port 5555");
 
             double currentSensorWeight = 0.0D;
             CocktailGlass cocktailGlass = getRandomCocktailGlass();
 
             try {
+                byte[] reply = zeroMqSocket.recv(0);
+                System.out.println("received request code, weight sensor running...");
+
                 // Send initial weight 0.
-                send(currentSensorWeight);
+                send(zeroMqSocket, currentSensorWeight);
+                System.out.println("send initial weight reading 0.0");
+
+                reply = zeroMqSocket.recv(0);
 
                 // Wait between 1 and 5 seconds to place the glass on the sensor.
                 Thread.sleep(1000 + (1000 * new Random().nextInt(5)));
 
                 // Put the glass on the weight sensor.
                 currentSensorWeight += cocktailGlass.weightGrams;
-                send(currentSensorWeight);
+                send(zeroMqSocket, currentSensorWeight);
+                System.out.println("send simulated weight reading " +
+                        currentSensorWeight + " (empty glass put on sensor)");
             } catch (InterruptedException e) {
                 throw new IllegalStateException(e);
             }
+
+            System.out.println("filling glass...");
 
             // Fill the glass to 95% capacity.
             double volumeMillilitres = ((double) cocktailGlass.volumeMillilitres) * 0.95D;
@@ -60,9 +69,10 @@ public class Hx711WeightSensor {
             double finalWeight = currentSensorWeight + gramsOfLiquid;
 
             while (currentSensorWeight < finalWeight) {
+                byte[] reply = zeroMqSocket.recv(0);
                 // Get flow rate per tenth of a second.
                 currentSensorWeight += (FLOW_RATE_GRAMS_PER_SECOND * 0.1);
-                send(currentSensorWeight);
+                send(zeroMqSocket, currentSensorWeight);
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
@@ -70,7 +80,7 @@ public class Hx711WeightSensor {
                 }
             }
 
-            socket.close();
+            main(null);
         }
     }
 
@@ -79,9 +89,9 @@ public class Hx711WeightSensor {
         return COCKTAIL_GLASSES[randomIndex];
     }
 
-    private static void send(double updatedSensorWeight) {
+    private static void send(ZMQ.Socket zeroMqSocket, double updatedSensorWeight) {
         byte[] bytes = ByteBuffer.allocate(8).putDouble(updatedSensorWeight).array();
-        socket.send(bytes);
+        zeroMqSocket.send(bytes);
     }
 
 }
