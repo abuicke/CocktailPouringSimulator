@@ -29,58 +29,82 @@ public class Hx711WeightSensor {
     };
 
     public static void main(String[] args) {
-        System.out.println("weight sensor started...");
+        System.out.println("weight sensor initialised");
         try (ZContext context = new ZContext()) {
-            ZMQ.Socket zeroMqSocket = context.createSocket(ZMQ.PUB);
-            zeroMqSocket.bind("tcp://*:5555");
-            System.out.println("created ZeroMQ reply socket on localhost TCP port 5555");
+            while (!Thread.currentThread().isInterrupted()) {
+                ZMQ.Socket replySocket = context.createSocket(ZMQ.REP);
+                replySocket.bind("tcp://*:5555");
+                System.out.println("reply socket bound to TCP port 5555, waiting for request from server...");
+                byte[] reply = replySocket.recv(0);
+                if (reply[0] == 1) {
+                    System.out.println("received request from sever to start running weight sensor simulation");
+                }
+                System.out.println("closes reply socket, request has been received");
+                replySocket.send(new byte[]{0});
+                replySocket.close();
 
-            double currentSensorWeight = 0.0D;
-            CocktailGlass cocktailGlass = getRandomCocktailGlass();
+                System.out.println("opening publisher socket to begin sending weight sensor readings");
+                ZMQ.Socket publisherSocket = context.createSocket(ZMQ.PUB);
+                publisherSocket.bind("tcp://*:5555");
+                System.out.println("publisher socket bound to TCP port 5555");
 
-            try {
-                byte[] reply = zeroMqSocket.recv(0);
-                System.out.println("received request code, weight sensor running...");
-
-                // Send initial weight 0.
-                send(zeroMqSocket, currentSensorWeight);
-                System.out.println("send initial weight reading 0.0");
-
-                reply = zeroMqSocket.recv(0);
-
-                // Wait between 1 and 5 seconds to place the glass on the sensor.
-                Thread.sleep(1000 + (1000 * new Random().nextInt(5)));
-
-                // Put the glass on the weight sensor.
-                currentSensorWeight += cocktailGlass.weightGrams;
-                send(zeroMqSocket, currentSensorWeight);
-                System.out.println("send simulated weight reading " +
-                        currentSensorWeight + " (empty glass put on sensor)");
-            } catch (InterruptedException e) {
-                throw new IllegalStateException(e);
-            }
-
-            System.out.println("filling glass...");
-
-            // Fill the glass to 95% capacity.
-            double volumeMillilitres = ((double) cocktailGlass.volumeMillilitres) * 0.95D;
-            // Get the weight in grams of the liquid when it fills the glass
-            double gramsOfLiquid = volumeMillilitres * AVERAGE_GRAMS_PER_MILLILITRE;
-            double finalWeight = currentSensorWeight + gramsOfLiquid;
-
-            while (currentSensorWeight < finalWeight) {
-                byte[] reply = zeroMqSocket.recv(0);
-                // Get flow rate per tenth of a second.
-                currentSensorWeight += (FLOW_RATE_GRAMS_PER_SECOND * 0.1);
-                send(zeroMqSocket, currentSensorWeight);
+                //  Ensure subscriber connection has time to complete
                 try {
-                    Thread.sleep(100);
+                    Thread.sleep(1000);
+                } catch (InterruptedException ie) {
+                    throw new IllegalStateException(ie);
+                }
+
+                // Set initial weight to 0.0
+                double currentSensorWeight = 0.0D;
+                CocktailGlass cocktailGlass = getRandomCocktailGlass();
+
+                try {
+                    // Send initial weight of 0.0
+                    send(publisherSocket, currentSensorWeight);
+                    System.out.println("sent initial weight reading 0.0");
+
+                    System.out.println("placing empty glass on the weight sensor");
+                    // Wait between 1 and 5 seconds to place the glass on the sensor.
+                    Thread.sleep(1000 + (1000 * new Random().nextInt(5)));
+                    System.out.println("empty glass has been placed on the weight sensor");
+
+                    // Put the glass on the weight sensor.
+                    currentSensorWeight += cocktailGlass.weightGrams;
+                    send(publisherSocket, currentSensorWeight);
+                    System.out.println("sent simulated weight reading " +
+                            currentSensorWeight + " of empty glass placed on sensor");
                 } catch (InterruptedException e) {
                     throw new IllegalStateException(e);
                 }
-            }
 
-            main(null);
+                // Fill the glass to 95% capacity.
+                double volumeMillilitres = ((double) cocktailGlass.volumeMillilitres) * 0.95D;
+                // Get the weight in grams of the liquid when it fills the glass
+                double gramsOfLiquid = volumeMillilitres * AVERAGE_GRAMS_PER_MILLILITRE;
+                double finalWeight = currentSensorWeight + gramsOfLiquid;
+
+                System.out.println("filling glass...");
+                while (currentSensorWeight < finalWeight) {
+                    // Get flow rate per tenth of a second.
+                    currentSensorWeight += (FLOW_RATE_GRAMS_PER_SECOND * 0.1);
+//                    System.out.println("sending updated weight detected by " +
+//                            "sensor as glass is being filled, " + currentSensorWeight);
+                    send(publisherSocket, currentSensorWeight);
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        throw new IllegalStateException(e);
+                    }
+                }
+                send(publisherSocket, -1);
+                System.out.println("glass has been filled");
+                System.out.println("closing socket to server...");
+                publisherSocket.close();
+                System.out.println("socket has been closed");
+                System.out.println("weight sensor simulator shutting down...");
+//            System.exit(0);
+            }
         }
     }
 
@@ -91,6 +115,7 @@ public class Hx711WeightSensor {
 
     private static void send(ZMQ.Socket zeroMqSocket, double updatedSensorWeight) {
         byte[] bytes = ByteBuffer.allocate(8).putDouble(updatedSensorWeight).array();
+        zeroMqSocket.send("weight sensor topic", ZMQ.SNDMORE);
         zeroMqSocket.send(bytes);
     }
 
