@@ -6,7 +6,7 @@ import org.zeromq.ZMQ;
 import java.nio.ByteBuffer;
 import java.util.Random;
 
-public class Hx711WeightSensor {
+public class CocktailPouringSimulator {
 
     private static final double AVERAGE_GRAMS_PER_MILLILITRE = 0.893F;
     private static final int FLOW_RATE_MILLILITRES_PER_SECOND = 20;

@@ -22,7 +22,7 @@
             <manifest>
               <addClasspath>true</addClasspath>
               <classpathPrefix>lib/</classpathPrefix>
-              <mainClass>lt.soe.autocock.weightsensor.Hx711WeightSensor</mainClass>
+              <mainClass>lt.soe.autocock.weightsensor.CocktailPouringSimulator</mainClass>
             </manifest>
           </archive>
         </configuration>
@@ -39,7 +39,7 @@
             <configuration>
               <transformers>
                 <transformer>
-                  <mainClass>lt.soe.autocock.weightsensor.Hx711WeightSensor</mainClass>
+                  <mainClass>lt.soe.autocock.weightsensor.CocktailPouringSimulator</mainClass>
                 </transformer>
               </transformers>
             </configuration>
