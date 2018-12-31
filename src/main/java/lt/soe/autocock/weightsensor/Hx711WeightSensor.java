@@ -28,7 +28,6 @@ public class Hx711WeightSensor {
             SAUCER_COCKTAIL_GLASS
     };
 
-    private static CocktailGlass cocktailGlass;
     private static double currentSensorWeight = 0.0D;
 
     public static void main(String[] args) {
@@ -68,7 +67,7 @@ public class Hx711WeightSensor {
                     if (isFirstIngredient) {
                         // Wait between 1 and 5 seconds to place the glass on the sensor.
                         Thread.sleep(1000 + (1000 * new Random().nextInt(5)));
-                        cocktailGlass = getRandomCocktailGlass();
+                        CocktailGlass cocktailGlass = getRandomCocktailGlass();
                         currentSensorWeight += cocktailGlass.weightGrams;
                         send(publisherSocket, currentSensorWeight);
                         System.out.println("empty glass has been placed on the " +
@@ -97,7 +96,7 @@ public class Hx711WeightSensor {
 
                 currentSensorWeight += filledIngredientWeight;
                 send(publisherSocket, -1);
-                System.out.println("glass has been filled");
+                System.out.println("ingredient has been poured");
                 publisherSocket.close();
             }
         }
