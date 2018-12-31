@@ -53,7 +53,9 @@ public class CocktailPouringSimulator {
                 replySocket.close();
 
                 ZMQ.Socket publisherSocket = context.createSocket(ZMQ.PUB);
-                publisherSocket.bind("tcp://*:5555");
+                publisherSocket.bind("tcp://*:5556");
+                System.out.println("publisher socket bound to TCP port 5556, " +
+                        "sending weight sensor readings to server...");
 
                 //  Ensure subscriber connection has time to complete
                 try {
