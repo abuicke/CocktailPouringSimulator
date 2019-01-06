@@ -1,4 +1,4 @@
-package lt.soe.autocock.weightsensor;
+package lt.soe.cocktailmachine;
 
 @SuppressWarnings("WeakerAccess")
 public class CocktailGlass {

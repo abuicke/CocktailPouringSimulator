@@ -1,4 +1,4 @@
-package lt.soe.autocock.weightsensor;
+package lt.soe.cocktailmachine;
 
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;

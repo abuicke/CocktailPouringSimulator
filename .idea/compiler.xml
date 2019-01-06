@@ -10,6 +10,7 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="hx711weightsensorsimulator" target="1.8" />
       <module name="weightsensor" target="1.8" />
       <module name="WeightSensor" target="1.8" />
       <module name="weightsensor (1)" target="1.8" />
