@@ -9,7 +9,13 @@ import java.util.Random;
 public class CocktailPouringSimulator {
 
     private static final double AVERAGE_GRAMS_PER_MILLILITRE = 0.893F;
+    /**
+     * The volume of liquid which is poured by the peristaltic pump every second.
+     * */
     private static final int FLOW_RATE_MILLILITRES_PER_SECOND = 20;
+    /**
+     * The average number of grams of liquid which is poured every second.
+     * */
     private static final double FLOW_RATE_GRAMS_PER_SECOND = AVERAGE_GRAMS_PER_MILLILITRE * (
             (double) FLOW_RATE_MILLILITRES_PER_SECOND
     );
@@ -28,20 +34,39 @@ public class CocktailPouringSimulator {
             SAUCER_COCKTAIL_GLASS
     };
 
+    /**
+     * The current weight which is being read by the weight sensor.
+     * */
     private static double currentSensorWeight = 0.0D;
 
     public static void main(String[] args) {
-        System.out.println("weight sensor initialised");
+        // Initialise ZeroMQ context, this is ues to open sockets
+        // e.g. context.createSocket(ZMQ.REP)
         try (ZContext context = new ZContext()) {
+            // Put all simulation code in a loop, this is so the simulator will
+            // reset after each time it processes a request from the server
             while (!Thread.currentThread().isInterrupted()) {
+                // Create a ZeroMQ reply socket, this will wait
+                // for a request from the cocktail machine server.
                 ZMQ.Socket replySocket = context.createSocket(ZMQ.REP);
+                // Bind the reply socket to port 5555.
+                // This means the request socket on the server
+                // should also be bound to port 5555.
                 replySocket.bind("tcp://*:5555");
                 System.out.println("reply socket bound to TCP port 5555, waiting for request from server...");
-                byte[] reply = replySocket.recv(0);
+                // Wait for request from server
+                byte[] request = replySocket.recv(0);
 
-                boolean isFirstIngredient = reply[0] == 0;
-                int ingredientQuantity = ByteBuffer.wrap(reply).getInt(1);
+                // The first byte of the request is either 1 or 0
+                // (i.e. true or false), which indicates if this
+                // request is the first ingredient in the cocktail.
+                boolean isFirstIngredient = request[0] == 0;
+                // The remaining 4 bytes in the request amount to a single integer which
+                // is the millilitres of the ingredient which needs to be poured.
+                int ingredientQuantity = ByteBuffer.wrap(request).getInt(1);
 
+                // If this is the first ingredient in the cocktail
+                // then reset the weight sensor to zero.
                 if (isFirstIngredient) {
                     currentSensorWeight = 0.0D;
                 }
@@ -49,15 +74,22 @@ public class CocktailPouringSimulator {
                 System.out.println("isFirstIngredient = " + isFirstIngredient);
                 System.out.println("ingredientQuantity = " + ingredientQuantity + "mls");
 
+                // Send a reply back to the server to indicate that the
+                // request has been received and has been processed.
                 replySocket.send(new byte[]{0});
+                // Close the socket, a new one will be opened when the
+                // while loop starts over again from the top.
                 replySocket.close();
 
+                // Open a new ZeroMQ socket to send information back to the server.
                 ZMQ.Socket publisherSocket = context.createSocket(ZMQ.PUB);
+                // Use a different port, i.e. 5556 as opposed to 5555.
                 publisherSocket.bind("tcp://*:5556");
                 System.out.println("publisher socket bound to TCP port 5556, " +
                         "sending weight sensor readings to server...");
 
-                //  Ensure subscriber connection has time to complete
+                // Wait 1 second to make sure that the server has
+                // time to connect to the new socket opened on port 5556.
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException ie) {
