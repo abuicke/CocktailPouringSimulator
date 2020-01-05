@@ -18,7 +18,7 @@ public class CocktailPouringSimulator {
      * */
     private static final double FLOW_RATE_GRAMS_PER_SECOND = AVERAGE_GRAMS_PER_MILLILITRE * (
             (double) FLOW_RATE_MILLILITRES_PER_SECOND
-    );
+        );
 
     private static final CocktailGlass PLASTIC_COCKTAIL_GLASS = new CocktailGlass(210, 17.3);
     private static final CocktailGlass TUMBLER_COCKTAIL_GLASS = new CocktailGlass(325, 320);

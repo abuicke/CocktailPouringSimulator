@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="CocktailPouringSimulator:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/CocktailPouringSimulator_jar</output-path>
+    <root id="archive" name="CocktailPouringSimulator.jar">
+      <element id="module-output" name="CocktailPouringSimulator" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/zeromq/jeromq/0.4.3/jeromq-0.4.3.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/zeromq/jnacl/0.1.0/jnacl-0.1.0.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
